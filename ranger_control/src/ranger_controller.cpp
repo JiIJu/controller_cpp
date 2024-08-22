@@ -1,6 +1,14 @@
 #include "ranger_control/ranger_controller.h"
 
+int ranger_controller::cnt_sum = 0;
+double ranger_controller::theta_old = 0.0;
+
+double ranger_controller::previous_u = 0.0;
+double ranger_controller::previous_yaw_rate = 0.0;
+
 ranger_controller::ranger_controller(ros::NodeHandle &nh) : nh_(nh) {
+    ros::Time prev_time = ros::Time::now();
+    ROS_INFO("prev_time : %f", prev_time);
     get_topic();
     get_frame();
 }
@@ -48,17 +56,71 @@ void ranger_controller::odometry_callback(const nav_msgs::Odometry::ConstPtr &od
         odometry_msg->pose.pose.orientation.y,
         odometry_msg->pose.pose.orientation.z,
         odometry_msg->pose.pose.orientation.w
-
     );
 
     double roll, pitch, yaw;
     quaternionToEuler(quat, roll, pitch, yaw);
 
-  
     yaw_raw = yaw;
+
+    processAngle(yaw_raw, sum_theta, cnt_sum);
+
+    
+
+    ROS_INFO("dt : %f" , dt.toSec());
+    // Discrete Derivative 블록
+    double Ts = 0.01;
+    double K = 1.0;   
+
+    double u = yaw; 
+    double derivative = K * (u - previous_u) / Ts;
+
+    previous_u = u; 
+    
+    // LPF3: c2d(7/(s+7), 0.01)
+    double LPF3_numerator = 0.0653;
+    double LPF3_denominator = -0.9347;
+
+    yaw_rate = LPF3_numerator * derivative + LPF3_denominator * previous_yaw_rate;
+
+    previous_yaw_rate = yaw_rate; 
+
+    
+
+
 }
 
 void ranger_controller::quaternionToEuler(const tf::Quaternion& quat, double& roll, double& pitch, double& yaw) {
     tf::Matrix3x3 m(quat);
     m.getRPY(roll, pitch, yaw);
+}
+
+void ranger_controller::processAngle(double theta, double& sum_theta, int& cnt_sum) {
+    int dire = 0;
+
+    if (theta - theta_old < -4) {
+        dire = 1;
+    } else if (theta - theta_old > 4) {
+        dire = -1;
+    }
+
+    if (dire == 1) {
+        cnt_sum += 1;
+    } else if (dire == -1) {
+        cnt_sum -= 1;
+    }
+
+    if (cnt_sum == 0) {
+        sum_theta = theta;
+    } else {
+        sum_theta = theta + cnt_sum * 2 * M_PI;
+    }
+    yaw = sum_theta;
+
+    theta_old = theta;
+    
+}
+
+void ranger_controller::updateDeltaTime(const ros::Duration& dt_) {
+    dt = dt_;  
 }
