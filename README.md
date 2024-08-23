@@ -1,1 +1,7 @@
-## I Hate Simulink Also I don't Like Cpp
+# README
+
+# 🐢For ranger mini controller🐢
+
+### Simulink 제어기 CPP Code Generation -ing
+
+--- 
