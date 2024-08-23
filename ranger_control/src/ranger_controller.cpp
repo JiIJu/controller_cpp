@@ -7,18 +7,26 @@ double ranger_controller::previous_u = 0.0;
 double ranger_controller::previous_yaw_rate = 0.0;
 
 ranger_controller::ranger_controller(ros::NodeHandle &nh) : nh_(nh) {
-    ros::Time prev_time = ros::Time::now();
-    ROS_INFO("prev_time : %f", prev_time);
+
+    L1 = 1.0;
+    L2 = 1.0;
+
     get_topic();
-    get_frame();
 }
 
 ranger_controller::~ranger_controller() {
-    
+
 }
 
 void ranger_controller::get_frame(){
+    pcheck(check , xr , yr , rrt_xr , rrt_yr);
+    ex = x - referen_x;
+    ey = y - referen_y;
 
+    exb = cos(yaw) * ex + ey * sin(yaw);
+    eyb = -sin(yaw) * ex + ey * cos(yaw);
+
+    ROS_INFO("exb : %f , eyb : %f" , exb,eyb);
 }
 
 
@@ -64,18 +72,18 @@ void ranger_controller::odometry_callback(const nav_msgs::Odometry::ConstPtr &od
     yaw_raw = yaw;
 
     processAngle(yaw_raw, sum_theta, cnt_sum);
+  
+    double dt_sec = dt.toSec();
 
-    
-
-    ROS_INFO("dt : %f" , dt.toSec());
-    // Discrete Derivative 블록
-    double Ts = 0.01;
     double K = 1.0;   
+    // double Ts = 0.01;
 
     double u = yaw; 
-    double derivative = K * (u - previous_u) / Ts;
+    double derivative = K * (u - previous_u) / dt_sec;
 
     previous_u = u; 
+
+    // 이 부분 확인 필요함
     
     // LPF3: c2d(7/(s+7), 0.01)
     double LPF3_numerator = 0.0653;
@@ -85,7 +93,8 @@ void ranger_controller::odometry_callback(const nav_msgs::Odometry::ConstPtr &od
 
     previous_yaw_rate = yaw_rate; 
 
-    
+    get_frame();
+
 
 
 }
@@ -118,6 +127,32 @@ void ranger_controller::processAngle(double theta, double& sum_theta, int& cnt_s
     yaw = sum_theta;
 
     theta_old = theta;
+    
+}
+
+void ranger_controller::pcheck(int u, double& way_x , double& way_y, double& rrt_x, double& rrt_y) {
+    
+    if(u==0){
+        referen_x = rrt_x;
+        referen_y = rrt_y;
+        vr = 1;
+        g1 = 3.5;
+        g2 = 1;
+    }
+    else if(u==1){
+        referen_x = way_x;
+        referen_y = way_y;
+        vr = 1;
+        g1 = 3.5;
+        g2 = 1;
+    }
+    else {
+        referen_x = rrt_x;
+        referen_y = rrt_y;
+        vr = 0;
+        g1 = 0;
+        g2 = 0;
+    }
     
 }
 

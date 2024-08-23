@@ -7,6 +7,8 @@
 #include <std_msgs/Int32.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/tf.h>
+#include<math.h>
+#include<stdio.h>
 class ranger_controller {
 public:
     
@@ -22,6 +24,14 @@ private:
     ros::Subscriber rrtR_sub;
     ros::Subscriber final_path_sub;
     ros::Subscriber odometry_sub;
+
+    // gain 값
+    double vr;
+    double g1;
+    double g2;
+    double L;
+    double L1;
+    double L2;
 
     // 토픽 변수
     double x;
@@ -41,6 +51,8 @@ private:
     double yaw_rate;
     double yaw_raw;
     double quaternion[4];  
+    double referen_x;
+    double referen_y;
 
 
     // matlab function 변수
@@ -65,6 +77,7 @@ private:
     void quaternionToEuler(const tf::Quaternion& quat, double& roll, double& pitch, double& yaw);
 
     void processAngle(double theta, double& sum_theta, int& cnt_sum);
+    void pcheck(int u, double& way_x , double& way_y, double& rrt_x, double& rrt_y);
 };
 
 
