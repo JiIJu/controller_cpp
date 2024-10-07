@@ -1,7 +1,7 @@
 #!/bin/bash
 
-WATCHED_DIR="/home/iju/controller_cpp/fire_detection"  # 모니터링할 디렉토리 경로
-GIT_REPO="/home/iju/controller_cpp"  # Git 저장소 경로
+WATCHED_DIR="/home/flyingcar/controller_cpp/fire_detection"  # 모니터링할 디렉토리 경로
+GIT_REPO="/home/flyingcar/controller_cpp"  # Git 저장소 경로
 
 # inotifywait을 사용하여 파일 생성 이벤트를 모니터링
 inotifywait -m -e create "$WATCHED_DIR" | while read -r directory events filename; do
